@@ -3,10 +3,19 @@
 #include <mav_msgs/Actuators.h>
 #include <mav_msgs/default_topics.h>
 #include <std_msgs/Float64.h>
+#include <sensor_msgs/Joy.h>
 
 /**
  * This tutorial demonstrates simple sending of messages over the ROS system.
  */
+ros::NodeHandle n;
+ros::Publisher rc_pub = n.advertise< mav_msgs::Actuators >( mav_msgs::default_topics::COMMAND_ACTUATORS, 1);
+void RcCallback(sensor_msgs::Joy msg)
+{
+  sensor_msgs::Joy out;
+  rc_pub.publish(out);
+}
+
 int main(int argc, char **argv)
 {
   /**
@@ -26,7 +35,6 @@ int main(int argc, char **argv)
    * The first NodeHandle constructed will fully initialize this node, and the last
    * NodeHandle destructed will close down the node.
    */
-  ros::NodeHandle n;
 
   /**
    * The advertise() function is how you tell ROS that you want to
@@ -45,43 +53,14 @@ int main(int argc, char **argv)
    * than we can send them, the number here specifies how many messages to
    * buffer up before throwing some away.
    */
-  ros::Publisher control_pub = n.advertise< mav_msgs::Actuators >( mav_msgs::default_topics::COMMAND_ACTUATORS, 1);
-
   ros::Rate loop_rate(10);
 
   /**
    * A count of how many messages we have sent. This is used to create
    * a unique string for each message.
    */
-  int count = 0;
-  while (ros::ok())
-  {
-    /**
-     * This is a message object. You stuff it with data, and then publish it.
-     */
-    mav_msgs::Actuators out;
-    /**
-     * The publish() function is how you send messages. The parameter
-     * is the message object. The type of this object must agree with the type
-     * given as a template parameter to the advertise<>() call, as was done
-     * in the constructor above.
-     */
-    out.normalized.resize(2);
-    if(count % 2 == 0){
-    out.normalized[0] = 0.5;
-    out.normalized[1] = 0.8;
-    }
-    else{
-    out.normalized[0] = 0.8;
-    out.normalized[1] = 0.5;
-    }
-    control_pub.publish(out);
 
-    ros::spinOnce();
-
-    loop_rate.sleep();
-    ++count;
-  }
+  ros::Subscriber sub = n.subscribe("rc", 1, RcCallback);
 
 
   return 0;
