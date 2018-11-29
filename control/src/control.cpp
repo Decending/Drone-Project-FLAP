@@ -12,7 +12,28 @@ ros::NodeHandle n;
 ros::Publisher rc_pub = n.advertise< mav_msgs::Actuators >( mav_msgs::default_topics::COMMAND_ACTUATORS, 1);
 void RcCallback(sensor_msgs::Joy msg)
 {
-  sensor_msgs::Joy out;
+  mav_msgs::Actuators out;
+  out.normalized.resize(8);
+  out.normalized[0] = msg.calibrated_value[2];
+  out.normalized[1] = msg.calibrated_value[2];
+  out.normalized[2] = ((-msg.calibrated_value[1]+msg.calibrated_value[0]) + 1) / 2;
+  out.normalized[3] = ((msg.calibrated_value[1]+msg.calibrated_value[0]) + 1) / 2;
+  out.normalized[4] = 0.0;
+  out.normalized[5] = 0.0;
+  out.normalized[6] = 0.0;
+  out.normalized[7] = 0.0;
+  if(out.normalized[2] > 1){
+      out.normalized[2] = 1;
+  }
+  if(out.normalized[2] < 0){
+      out.normalized[2] = 0;
+  }
+  if(out.normalized[3] > 1){
+      out.normalized[3] = 1;
+  }
+  if(out.normalized[3] < 0){
+      out.normalized[3] = 0;
+  }
   rc_pub.publish(out);
 }
 
