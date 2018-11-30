@@ -8,34 +8,53 @@
 /**
  * This tutorial demonstrates simple sending of messages over the ROS system.
  */
-ros::NodeHandle n;
-ros::Publisher rc_pub = n.advertise< mav_msgs::Actuators >( mav_msgs::default_topics::COMMAND_ACTUATORS, 1);
-void RcCallback(sensor_msgs::Joy msg)
+
+class SubscribeAndPublish
 {
-  mav_msgs::Actuators out;
-  out.normalized.resize(8);
-  out.normalized[0] = msg.calibrated_value[2];
-  out.normalized[1] = msg.calibrated_value[2];
-  out.normalized[2] = ((-msg.calibrated_value[1]+msg.calibrated_value[0]) + 1) / 2;
-  out.normalized[3] = ((msg.calibrated_value[1]+msg.calibrated_value[0]) + 1) / 2;
-  out.normalized[4] = 0.0;
-  out.normalized[5] = 0.0;
-  out.normalized[6] = 0.0;
-  out.normalized[7] = 0.0;
-  if(out.normalized[2] > 1){
-      out.normalized[2] = 1;
+public:
+  SubscribeAndPublish()
+  {
+    //Topic you want to publish
+    ros::Publisher rc_pub = n.advertise< mav_msgs::Actuators >( mav_msgs::default_topics::COMMAND_ACTUATORS, 1);
+
+    //Topic you want to subscribe
+    ros::Subscriber rc_sub = n.subscribe("rc", 1, &SubscribeAndPublish::RcCallback, this);
   }
-  if(out.normalized[2] < 0){
-      out.normalized[2] = 0;
+
+  void RcCallback(sensor_msgs::Joy msg)
+  {
+    mav_msgs::Actuators out;
+    out.normalized.resize(8);
+    out.normalized[0] = msg.axes[2];
+    out.normalized[1] = msg.axes[2];
+    out.normalized[2] = ((-msg.axes[1]+msg.axes[0]) + 1) / 2;
+    out.normalized[3] = ((msg.axes[1]+msg.axes[0]) + 1) / 2;
+    out.normalized[4] = 0.0;
+    out.normalized[5] = 0.0;
+    out.normalized[6] = 0.0;
+    out.normalized[7] = 0.0;
+    if(out.normalized[2] > 1){
+        out.normalized[2] = 1;
+    }
+    if(out.normalized[2] < 0){
+        out.normalized[2] = 0;
+    }
+    if(out.normalized[3] > 1){
+        out.normalized[3] = 1;
+    }
+    if(out.normalized[3] < 0){
+        out.normalized[3] = 0;
+    }
+    rc_pub.publish(out);
+    return;
   }
-  if(out.normalized[3] > 1){
-      out.normalized[3] = 1;
-  }
-  if(out.normalized[3] < 0){
-      out.normalized[3] = 0;
-  }
-  rc_pub.publish(out);
-}
+
+private:
+  ros::NodeHandle n;
+  ros::Publisher rc_pub;
+  ros::Subscriber rc_sub;
+
+};//End of class SubscribeAndPublish
 
 int main(int argc, char **argv)
 {
@@ -50,6 +69,7 @@ int main(int argc, char **argv)
    * part of the ROS system.
    */
   ros::init(argc, argv, "control");
+  SubscribeAndPublish SAPObject;
 
   /**
    * NodeHandle is the main access point to communications with the ROS system.
@@ -80,8 +100,6 @@ int main(int argc, char **argv)
    * A count of how many messages we have sent. This is used to create
    * a unique string for each message.
    */
-
-  ros::Subscriber sub = n.subscribe("rc", 1, RcCallback);
 
 
   return 0;
