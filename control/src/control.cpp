@@ -15,10 +15,10 @@ public:
   SubscribeAndPublish()
   {
     //Topic you want to publish
-    ros::Publisher rc_pub = n.advertise< mav_msgs::Actuators >( mav_msgs::default_topics::COMMAND_ACTUATORS, 1, this);
+    rc_pub = n.advertise< mav_msgs::Actuators >( mav_msgs::default_topics::COMMAND_ACTUATORS, 1);
 
     //Topic you want to subscribe
-    ros::Subscriber rc_sub = n.subscribe("rc", 1, &SubscribeAndPublish::RcCallback, this);
+    rc_sub = n.subscribe("/rc", 1, &SubscribeAndPublish::RcCallback, this);
   }
 
   void RcCallback(sensor_msgs::Joy msg)
@@ -69,8 +69,7 @@ int main(int argc, char **argv)
    * part of the ROS system.
    */
   ros::init(argc, argv, "control");
-  ros::NodeHandle n;
-  SubscribeAndPublish SAPObject;
+  SubscribeAndPublish myObject;
 
   /**
    * NodeHandle is the main access point to communications with the ROS system.
