@@ -15,7 +15,7 @@ public:
   SubscribeAndPublish()
   {
     //Topic you want to publish
-    ros::Publisher rc_pub = n.advertise< mav_msgs::Actuators >( mav_msgs::default_topics::COMMAND_ACTUATORS, 1);
+    ros::Publisher rc_pub = n.advertise< mav_msgs::Actuators >( mav_msgs::default_topics::COMMAND_ACTUATORS, 1, this);
 
     //Topic you want to subscribe
     ros::Subscriber rc_sub = n.subscribe("rc", 1, &SubscribeAndPublish::RcCallback, this);
@@ -69,6 +69,7 @@ int main(int argc, char **argv)
    * part of the ROS system.
    */
   ros::init(argc, argv, "control");
+  ros::NodeHandle n;
   SubscribeAndPublish SAPObject;
 
   /**
@@ -94,9 +95,7 @@ int main(int argc, char **argv)
    * than we can send them, the number here specifies how many messages to
    * buffer up before throwing some away.
    */
-  while (ros::ok()){
-
-  }
+  ros::spin();
 
   /**
    * A count of how many messages we have sent. This is used to create
