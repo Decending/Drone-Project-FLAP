@@ -94,7 +94,9 @@ int main(int argc, char **argv)
    * than we can send them, the number here specifies how many messages to
    * buffer up before throwing some away.
    */
-  ros::Rate loop_rate(10);
+  while (ros::ok()){
+
+  }
 
   /**
    * A count of how many messages we have sent. This is used to create
