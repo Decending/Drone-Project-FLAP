@@ -27,10 +27,10 @@ public:
     out.normalized.resize(8);
     out.normalized[0] = msg.axes[2];
     out.normalized[1] = msg.axes[2];
-    out.normalized[2] = ((-msg.axes[1]+msg.axes[0]) + 1) / 2;
-    out.normalized[3] = ((msg.axes[1]+msg.axes[0]) + 1) / 2;
-    out.normalized[4] = 0.0;
-    out.normalized[5] = 0.0;
+    out.normalized[2] = 0.0;
+    out.normalized[3] = 0.0;
+    out.normalized[4] = ((-msg.axes[1]+msg.axes[0]) + 1) / 2;
+    out.normalized[5] = ((msg.axes[1]+msg.axes[0]) + 1) / 2;
     out.normalized[6] = 0.0;
     out.normalized[7] = 0.0;
     if(out.normalized[2] > 1){
