@@ -33,17 +33,17 @@ public:
     out.normalized[5] = ((msg.axes[1]+msg.axes[0]) + 1) / 2;
     out.normalized[6] = 0.0;
     out.normalized[7] = 0.0;
-    if(out.normalized[2] > 1){
-        out.normalized[2] = 1;
+    if(out.normalized[4] > 1){
+        out.normalized[4] = 1;
     }
-    if(out.normalized[2] < 0){
-        out.normalized[2] = 0;
+    if(out.normalized[4] < 0){
+        out.normalized[4] = 0;
     }
-    if(out.normalized[3] > 1){
-        out.normalized[3] = 1;
+    if(out.normalized[5] > 1){
+        out.normalized[5] = 1;
     }
-    if(out.normalized[3] < 0){
-        out.normalized[3] = 0;
+    if(out.normalized[5] < 0){
+        out.normalized[5] = 0;
     }
     rc_pub.publish(out);
     return;
