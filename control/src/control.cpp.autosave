@@ -21,8 +21,8 @@ public:
     rc_sub = n.subscribe("/rc", 1, &SubscribeAndPublish::SetThrust, this);
     //imu_sub = n.subscribe("/imu", 1, &SubscribeAndPublish::SetFlaps, this);
     thrust = 0.0;
-    flap1 = 0.5;
-    flap2 = 0.5;
+    flap1 = 0.0;
+    flap2 = 1.0;
   }
 
   void SetThrust(sensor_msgs::Joy msg)
