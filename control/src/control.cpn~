@@ -94,12 +94,12 @@ public:
    mav_msgs::Actuators command;
    command.normalized.resize(8);
    //if(!counter%1){
-   command.normalized[0] = 1.05 * (returnThrust() - returnThrust_roll());
-   command.normalized[1] = returnThrust() + returnThrust_roll();
+   command.normalized[0] = 1.05 * (this.returnThrust() - this.returnThrust_roll());
+   command.normalized[1] = this.returnThrust() + this.returnThrust_roll();
    command.normalized[2] = 0.0;
    command.normalized[3] = 0.0;
-   command.normalized[4] = returnFlap1();
-   command.normalized[5] = returnFlap2();
+   command.normalized[4] = this.returnFlap1();
+   command.normalized[5] = this.returnFlap2();
    command.normalized[6] = 0.0;
    command.normalized[7] = 0.0;
    if(command.normalized[0] > 1){
@@ -140,7 +140,7 @@ public:
    rc_pub.publish(command);
 
     return;
-  } 
+  }
 
   float returnThrust(){
       return thrust;

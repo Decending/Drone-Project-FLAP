@@ -22,10 +22,9 @@ public:
     rc_sub = n.subscribe("/rc", 1, &SubscribeAndPublish::SetThrust, this);
     imu_sub = n.subscribe("/imu", 1, &SubscribeAndPublish::SetFlaps, this);
     imu_pub = n.advertise<sensor_msgs::Imu>("/filtered_imu", 1);
-    rc_pub = n.advertise< mav_msgs::Actuators >( mav_msgs::default_topics::COMMAND_ACTUATORS, 1);
     //service = n.advertiseService("Set gains", &SubscribeAndPublish::SubscribeAndPublish::setGains, this);
     SENSOR_ACCGYRO_HZ = 100;
-    ACCGYRO_BIQUAD_CUT_HZ = 40;
+    ACCGYRO_BIQUAD_CUT_HZ = 20;
     ACCGYRO_BUTTERWORTH_Q = 0.707;
     for(int i = 0; i < 3; i++){
 	    BiquadInitStateDF2T(&gyro_lpf_biquad[i].state);
@@ -34,8 +33,8 @@ public:
     thrust = 0.0;
     flap1 = 0.5;
     flap2 = 0.5;
-    k1 = 0.2;
-    k2 = 0.24;
+    k1 = 0.1;
+    k2 = 0.12;
     k3 = 0.05;
     //SENSOR_ACCGYRO_HZ = 25;
     //ACCGYRO_BIQUAD_CUT_HZ = 20;
@@ -51,17 +50,14 @@ public:
   }
 
   bool setGains(control::SetGains::Request& req, control::SetGains::Response& res){
-    k1 = req.yaw;
-    k2 = req.pitch;
-    k3 = req.roll;
+    //k1 = ;
+    //k2 = ;
+    //k3 = ;
     return true;
   }
 
   void SetFlaps(sensor_msgs::Imu msg)
   {
-    /**
-     * This is a message object. You stuff it with data, and then publish it.
-     */
     gyro_u.at(0) = msg.angular_velocity.x;
     gyro_u.at(1) = msg.angular_velocity.y;
     gyro_u.at(2) = msg.angular_velocity.z;
@@ -87,60 +83,8 @@ public:
     //out.normalized[4] = ((-msg.axes[1]+msg.axes[0]) + 1) / 2; Flap1
     //out.normalized[5] = ((msg.axes[1]+msg.axes[0]) + 1) / 2; Flap2
     imu_pub.publish(out);
-
-
-
-
-   mav_msgs::Actuators command;
-   command.normalized.resize(8);
-   //if(!counter%1){
-   command.normalized[0] = 1.05 * (returnThrust() - returnThrust_roll());
-   command.normalized[1] = returnThrust() + returnThrust_roll();
-   command.normalized[2] = 0.0;
-   command.normalized[3] = 0.0;
-   command.normalized[4] = returnFlap1();
-   command.normalized[5] = returnFlap2();
-   command.normalized[6] = 0.0;
-   command.normalized[7] = 0.0;
-   if(command.normalized[0] > 1){
-	command.normalized[0] = 1;
-   }
-   if(command.normalized[1] > 1){
-	command.normalized[1] = 1;
-   }
-   if(command.normalized[0] < 0){
-	command.normalized[0] = 0;
-   }
-   if(command.normalized[1] < 0){
-	command.normalized[1] = 0;
-   }
-   //}
-   //else{
-   //out.normalized[0] = myObject.returnThrust() + 0.1;
-   //out.normalized[1] = myObject.returnThrust() - 0.1;
-   //out.normalized[2] = 0.0;
-   //out.normalized[3] = 0.0;
-   //out.normalized[4] = myObject.returnFlap2();
-   //out.normalized[5] = myObject.returnFlap2();
-   //out.normalized[6] = 0.0;
-   //out.normalized[7] = 0.0;
-   //if(out.normalized[0] > 1){
-	//out.normalized[0] = 1;
-   //}
-   //if(out.normalized[1] > 1){
-	//out.normalized[1] = 1;
-   //}
-   //if(out.normalized[0] < 0){
-	//out.normalized[0] = 0;
-   //}
-   //if(out.normalized[1] < 0){
-	//out.normalized[1] = 0;
-   //}
-   //}
-   rc_pub.publish(command);
-
     return;
-  } 
+  }
 
   float returnThrust(){
       return thrust;
@@ -162,7 +106,6 @@ private:
   ros::Subscriber rc_sub;
   ros::Subscriber imu_sub;
   ros::Publisher imu_pub;
-  ros::Publisher rc_pub;
   ros::ServiceServer service;
   float thrust;
   float flap1;
@@ -197,8 +140,11 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "control");
   ros::NodeHandle n;
   SubscribeAndPublish myObject;
+  ros::Publisher rc_pub = n.advertise< mav_msgs::Actuators >( mav_msgs::default_topics::COMMAND_ACTUATORS, 1);
   ros::ServiceServer service = n.advertiseService("SetGains", &SubscribeAndPublish::setGains, &myObject);
-   /* The first NodeHandle constructed will fully initialize this node, and the last
+  /**
+   * NodeHandle is the main access point to communications with the ROS system.
+   * The first NodeHandle constructed will fully initialize this node, and the last
    * NodeHandle destructed will close down the node.
    */
 
@@ -219,7 +165,66 @@ int main(int argc, char **argv)
    * than we can send them, the number here specifies how many messages to
    * buffer up before throwing some away.
    */
-   ros::spin();
+  int counter = 0;
+  ros::Rate loop_rate(25);
+  while (ros::ok())
+  {
+    /**
+     * This is a message object. You stuff it with data, and then publish it.
+     */
+   mav_msgs::Actuators out;
+   out.normalized.resize(8);
+   //if(!counter%1){
+   out.normalized[0] = 1.05 * (myObject.returnThrust() - myObject.returnThrust_roll());
+   out.normalized[1] = myObject.returnThrust() + myObject.returnThrust_roll();
+   out.normalized[2] = 0.0;
+   out.normalized[3] = 0.0;
+   out.normalized[4] = myObject.returnFlap1();
+   out.normalized[5] = myObject.returnFlap2();
+   out.normalized[6] = 0.0;
+   out.normalized[7] = 0.0;
+   if(out.normalized[0] > 1){
+	out.normalized[0] = 1;
+   }
+   if(out.normalized[1] > 1){
+	out.normalized[1] = 1;
+   }
+   if(out.normalized[0] < 0){
+	out.normalized[0] = 0;
+   }
+   if(out.normalized[1] < 0){
+	out.normalized[1] = 0;
+   }
+   //}
+   //else{
+   //out.normalized[0] = myObject.returnThrust() + 0.1;
+   //out.normalized[1] = myObject.returnThrust() - 0.1;
+   //out.normalized[2] = 0.0;
+   //out.normalized[3] = 0.0;
+   //out.normalized[4] = myObject.returnFlap2();
+   //out.normalized[5] = myObject.returnFlap2();
+   //out.normalized[6] = 0.0;
+   //out.normalized[7] = 0.0;
+   //if(out.normalized[0] > 1){
+	//out.normalized[0] = 1;
+   //}
+   //if(out.normalized[1] > 1){
+	//out.normalized[1] = 1;
+   //}
+   //if(out.normalized[0] < 0){
+	//out.normalized[0] = 0;
+   //}
+   //if(out.normalized[1] < 0){
+	//out.normalized[1] = 0;
+   //}
+   //}
+   ++counter;
+   rc_pub.publish(out);
+
+   ros::spinOnce();
+
+   loop_rate.sleep();
+  }
 
   /**
    * A count of how many messages we have sent. This is used to create
