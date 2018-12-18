@@ -41,6 +41,7 @@ public:
     k4 = 10;
     k5 = 10;
     k6 = 10;
+    flapOffSet = 0.0;
     gyro_u = {0.0, 0.0, 0.0};
     gyro_f = {0.0, 0.0, 0.0};
     roll = 0.0;

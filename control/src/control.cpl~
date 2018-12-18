@@ -43,6 +43,10 @@ public:
     k6 = 10;
     gyro_u = {0.0, 0.0, 0.0};
     gyro_f = {0.0, 0.0, 0.0};
+    qx = 0.0;
+    qy = 0.0;
+    qz = 0.0;
+    qw = 0.0;
     roll = 0.0;
     pitch = 0.0;
     yaw = 0.0;
@@ -103,7 +107,6 @@ public:
     k12 = req.k12;
     x_ref = req.x_ref;
     y_ref = req.y_ref;
-    flapOffSet = req.flapOffSet;
     return true;
   }
 
@@ -126,8 +129,8 @@ public:
     out.angular_velocity.x = gyro_f.at(0);
     out.angular_velocity.y = gyro_f.at(1);
     out.angular_velocity.z = gyro_f.at(2);
-    flap1 = k1 * (-ang_speed_ref_z-gyro_f.at(1)) + k2 * (ang_speed_ref_y-gyro_f.at(0)) + 0.5 + flapOffSet;
-    flap2 = k1 * (-ang_speed_ref_z-gyro_f.at(1)) + k2 * (gyro_f.at(0)-ang_speed_ref_y) + 0.5 - flapOffSet;
+    flap1 = k1 * (-ang_speed_ref_z-gyro_f.at(1)) + k2 * (ang_speed_ref_y-gyro_f.at(0)) + 0.5;
+    flap2 = k1 * (-ang_speed_ref_z-gyro_f.at(1)) + k2 * (gyro_f.at(0)-ang_speed_ref_y) + 0.5;
     thrust_roll = k3 *(ang_speed_ref_x + gyro_f.at(2));
     if(thrust_roll > 0.1){
 	 thrust_roll = 0.1;
@@ -141,7 +144,7 @@ public:
 
    mav_msgs::Actuators command;
    command.normalized.resize(8);
-   command.normalized[0] = returnThrust() - returnThrust_roll();
+   command.normalized[0] = 1.05 * (returnThrust() - returnThrust_roll());
    command.normalized[1] = returnThrust() + returnThrust_roll();
    command.normalized[2] = 0.0;
    command.normalized[3] = 0.0;
@@ -218,7 +221,6 @@ private:
   float k12;
   float x_ref;
   float y_ref;
-  float flapOffSet;
   float roll;
   float pitch;
   float yaw;

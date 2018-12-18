@@ -1,5 +1,17 @@
-float64 roll
-float64 pitch
-float64 yaw
+float64 flapOffSet
+float64 x_ref
+float64 y_ref
+float64 k1
+float64 k2
+float64 k3
+float64 k4
+float64 k5
+float64 k6
+float64 k7
+float64 k8
+float64 k9
+float64 k10
+float64 k11
+float64 k12
 ---
 
