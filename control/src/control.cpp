@@ -32,26 +32,39 @@ public:
 	    BiquadInitStateDF2T(&gyro_lpf_biquad[i].state);
 	    BiquadUpdateCoeffs(&gyro_lpf_biquad[i].coeffs, SENSOR_ACCGYRO_HZ, ACCGYRO_BIQUAD_CUT_HZ, ACCGYRO_BUTTERWORTH_Q, BIQUAD_TYPE_LPF);
     }
+    //Data holders for actuators
     thrust = 0.0;
     flap1 = 0.5;
     flap2 = 0.5;
+
+    //Controller gains
     k1 = 0.2;
     k2 = 0.24;
     k3 = 0.05;
     k4 = 10;
     k5 = 10;
     k6 = 10;
+
+    //Holders for filter data
     gyro_u = {0.0, 0.0, 0.0};
     gyro_f = {0.0, 0.0, 0.0};
+
+    //Initial data for vicon angles
     roll = 0.0;
     pitch = 0.0;
     yaw = 0.0;
+
+    //Reference values
     roll_ref = 0.0;
     pitch_ref = 0.0;
     yaw_ref = 0.0;
     ang_speed_ref_x = 0.0;
     ang_speed_ref_y = 0.0;
     ang_speed_ref_z = 0.0;
+    lin_speed_ref_x = 0.0;
+    lin_speed_ref_y = 0.0;
+    x_ref = 0.0;
+    y_ref = 4.0;
   }
 
   void SetThrust(sensor_msgs::Joy msg)
@@ -228,6 +241,8 @@ private:
   float ang_speed_ref_x;
   float ang_speed_ref_y;
   float ang_speed_ref_z;
+  float lin_speed_ref_x;
+  float lin_speed_ref_y;
   biquad_df2t_t gyro_lpf_biquad[3];
   biquad_type_t BIQUAD_TYPE_LPF;
   float SENSOR_ACCGYRO_HZ;
