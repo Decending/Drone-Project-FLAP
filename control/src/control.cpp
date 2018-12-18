@@ -31,11 +31,14 @@ public:
     for(int i = 0; i < 3; i++){
 	    BiquadInitStateDF2T(&gyro_lpf_biquad[i].state);
 	    BiquadUpdateCoeffs(&gyro_lpf_biquad[i].coeffs, SENSOR_ACCGYRO_HZ, ACCGYRO_BIQUAD_CUT_HZ, ACCGYRO_BUTTERWORTH_Q, BIQUAD_TYPE_LPF);
+            BiquadInitStateDF2T(&velocity_lpf_biquad[i].state);
+            BiquadUpdateCoeffs(&velocity_lpf_biquad[i].coeffs, SENSOR_ACCGYRO_HZ, ACCGYRO_BIQUAD_CUT_HZ, ACCGYRO_BUTTERWORTH_Q, BIQUAD_TYPE_LPF);
     }
     //Data holders for actuators
     thrust = 0.0;
     flap1 = 0.5;
     flap2 = 0.5;
+    flapOffSet = 0.13;
 
     //Controller gains
     k1 = 0.2;
@@ -44,10 +47,14 @@ public:
     k4 = 10;
     k5 = 10;
     k6 = 10;
+    k7 = 1.0;
+    k8 = 1.0;
 
     //Holders for filter data
     gyro_u = {0.0, 0.0, 0.0};
     gyro_f = {0.0, 0.0, 0.0};
+    lin_speed_vicon = {0.0, 0.0};
+    lin_speed_vicon_f = {0.0, 0.0};
 
     //Initial data for vicon angles
     roll = 0.0;
@@ -74,6 +81,15 @@ public:
   }
 
   void SetEulerAngles(nav_msgs::Odometry msg){
+      lin_speed_vicon.at(0) = msg.twist.twist.linear.x;
+      lin_speed_vicon.at(1) = msg.twist.twist.linear.y;
+      for(int i = 0; i < 2; i++){
+          lin_speed_vicon_f.at(i) = BiquadDF2TApply(&velocity_lpf_biquad[i], lin_speed_vicon.at(i));
+      }
+
+      position_vicon_x = msg.pose.pose.position.x;
+      position_vicon_y = msg.pose.pose.position.y;
+
       double qx = msg.pose.pose.orientation.x;
       double qy = msg.pose.pose.orientation.y;
       double qz = msg.pose.pose.orientation.z;
@@ -112,8 +128,6 @@ public:
     k8 = req.k8;
     k9 = req.k9;
     k10 = req.k10;
-    k11 = req.k11;
-    k12 = req.k12;
     x_ref = req.x_ref;
     y_ref = req.y_ref;
     flapOffSet = req.flapOffSet;
@@ -122,6 +136,22 @@ public:
 
   void SetFlaps(sensor_msgs::Imu msg)
   {
+    roll_ref = k7*(lin_speed_ref_y-lin_speed_vicon_f.at(1));
+    pitch_ref = k8*(lin_speed_ref_x-lin_speed_vicon_f.at(0));
+
+    if(roll_ref > 0.1){
+        roll_ref = 0.1;
+    }
+    if(roll_ref < -0.1){
+        roll_ref = -0.1;
+    }
+    if(pitch_ref > 0.1){
+        pitch_ref = 0.1;
+    }
+    if(pitch_ref < -0.1){
+        pitch_ref = -0.1;
+    }
+
     ang_speed_ref_x = k4*(roll_ref - roll);
     ang_speed_ref_y = k5*(pitch_ref - pitch);
     ang_speed_ref_z = k6*(yaw_ref - yaw);
@@ -227,8 +257,6 @@ private:
   float k8;
   float k9;
   float k10;
-  float k11;
-  float k12;
   float x_ref;
   float y_ref;
   float flapOffSet;
@@ -243,13 +271,18 @@ private:
   float ang_speed_ref_z;
   float lin_speed_ref_x;
   float lin_speed_ref_y;
+  float position_vicon_x;
+  float position_vicon_y;
   biquad_df2t_t gyro_lpf_biquad[3];
+  biquad_df2t_t velocity_lpf_biquad[3];
   biquad_type_t BIQUAD_TYPE_LPF;
   float SENSOR_ACCGYRO_HZ;
   float ACCGYRO_BIQUAD_CUT_HZ;
   float ACCGYRO_BUTTERWORTH_Q;
   std::vector<float> gyro_u;
   std::vector<float> gyro_f;
+  std::vector<float> lin_speed_vicon;
+  std::vector<float> lin_speed_vicon_f;
   
 
 };//End of class SubscribeAndPublish
