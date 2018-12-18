@@ -47,8 +47,10 @@ public:
     k4 = 10;
     k5 = 10;
     k6 = 10;
-    k7 = 1.0;
-    k8 = 1.0;
+    k7 = 0.3;
+    k8 = 0.3;
+    k9 = 1;
+    k10 = 1;
 
     //Holders for filter data
     gyro_u = {0.0, 0.0, 0.0};
@@ -136,8 +138,11 @@ public:
 
   void SetFlaps(sensor_msgs::Imu msg)
   {
-    roll_ref = k7*(lin_speed_ref_y-lin_speed_vicon_f.at(1));
-    pitch_ref = k8*(lin_speed_ref_x-lin_speed_vicon_f.at(0));
+    lin_speed_ref_x = k9*(x_ref - position_vicon_x);
+    lin_speed_ref_y = k10*(y_ref - position_vicon_y);
+
+    roll_ref = k7*(lin_speed_ref_y - lin_speed_vicon_f.at(1));
+    pitch_ref = k8*(lin_speed_ref_x - lin_speed_vicon_f.at(0));
 
     if(roll_ref > 0.1){
         roll_ref = 0.1;
