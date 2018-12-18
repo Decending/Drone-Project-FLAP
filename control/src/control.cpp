@@ -86,6 +86,10 @@ public:
       for(int i = 0; i < 2; i++){
           lin_speed_vicon_f.at(i) = BiquadDF2TApply(&velocity_lpf_biquad[i], lin_speed_vicon.at(i));
       }
+      std::cout.precision(4);
+      std::cout << std::setw(10) << lin_speed_vicon_f.at(0) << "\n";
+      std::cout << std::setw(10) << lin_speed_vicon_f.at(1) << "\n";
+      std::cout << std::setw(10) << "------------------------------" << "\n";
 
       position_vicon_x = msg.pose.pose.position.x;
       position_vicon_y = msg.pose.pose.position.y;
@@ -111,10 +115,6 @@ public:
       double siny_cosp = +2.0 * (qw * qz + qx * qy);
       double cosy_cosp = +1.0 - 2.0 * (qy * qy + qz * qz);
       yaw = atan2(siny_cosp, cosy_cosp);
-      std::cout.precision(4);
-      std::cout << std::setw(10) << roll << "\n";
-      std::cout << std::setw(10) << pitch << "\n";
-      std::cout << std::setw(10) << yaw << "\n";
   }
 
   bool setGains(control::SetGains::Request& req, control::SetGains::Response& res){
