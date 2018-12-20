@@ -38,7 +38,7 @@ public:
     thrust = 0.0;
     flap1 = 0.5;
     flap2 = 0.5;
-    flapOffSet = 0.13;
+    flapOffSet = 0.0;
 
     //Controller gains
     k1 = 0.2;
@@ -144,21 +144,21 @@ public:
     roll_ref = k7*(lin_speed_ref_y - lin_speed_vicon_f.at(1));
     pitch_ref = k8*(lin_speed_ref_x - lin_speed_vicon_f.at(0));
 
-    if(roll_ref > 0.1){
-        roll_ref = 0.1;
+    if(roll_ref > 0.5){
+        roll_ref = 0.5;
     }
-    if(roll_ref < -0.1){
-        roll_ref = -0.1;
+    if(roll_ref < -0.5){
+        roll_ref = -0.5;
     }
-    if(pitch_ref > 0.1){
-        pitch_ref = 0.1;
+    if(pitch_ref > 0.5){
+        pitch_ref = 0.5;
     }
-    if(pitch_ref < -0.1){
-        pitch_ref = -0.1;
+    if(pitch_ref < -0.5){
+        pitch_ref = -0.5;
     }
 
-    ang_speed_ref_x = k4*(roll_ref - roll);
-    ang_speed_ref_y = k5*(pitch_ref - pitch);
+    ang_speed_ref_x = k4*(-roll_ref - roll);
+    ang_speed_ref_y = k5*(-pitch_ref - pitch);
     ang_speed_ref_z = k6*(yaw_ref - yaw);
 
     //defined so we can print it
