@@ -3,10 +3,56 @@
 #include <mav_msgs/Actuators.h>
 #include <mav_msgs/default_topics.h>
 #include <std_msgs/Float64.h>
+#include <test4/SetVariables.h>
+#include <sensor_msgs/Joy.h>
 
 /**
  * This tutorial demonstrates simple sending of messages over the ROS system.
  */
+class SubscribeAndPublish
+{
+public:
+  SubscribeAndPublish()
+  {
+      rc_sub = n.subscribe("/rc", 1, &SubscribeAndPublish::SetThrust, this);
+      myFrequency = 3;
+      myMotorOffset = 0.0;
+  }
+
+  void SetThrust(sensor_msgs::Joy msg)
+  {
+    myThrust = msg.axes[2];
+    return;
+  }
+
+  bool setVariables(test4::SetVariables::Request& req, test4::SetVariables::Response& res){
+    myFrequency = req.Frequency;
+    myMotorOffset = req.MotorOffset;
+    return true;
+  }
+
+  float returnFrequency(){
+      return myFrequency;
+  }
+
+  double returnThrust(){
+      return myThrust;
+  }
+
+  double returnMotorOffset(){
+      return myMotorOffset;
+  }
+
+private:
+  float myFrequency;
+  double myMotorOffset;
+  double myThrust;
+  ros::NodeHandle n;
+  ros::Subscriber rc_sub;
+
+
+};
+
 int main(int argc, char **argv)
 {
   /**
@@ -45,6 +91,8 @@ int main(int argc, char **argv)
    * than we can send them, the number here specifies how many messages to
    * buffer up before throwing some away.
    */
+  SubscribeAndPublish myObject;
+  ros::ServiceServer service = n.advertiseService("SetVariables", &SubscribeAndPublish::setVariables, &myObject);
   ros::Publisher control_pub = n.advertise< mav_msgs::Actuators >( mav_msgs::default_topics::COMMAND_ACTUATORS, 1);
 
   ros::Rate loop_rate(10);
@@ -66,23 +114,31 @@ int main(int argc, char **argv)
      * given as a template parameter to the advertise<>() call, as was done
      * in the constructor above.
      */
-    out.normalized.resize(4);
+    out.normalized.resize(8);
     if(count % 2 == 0){
-    out.normalized[0] = 0.0;
-    out.normalized[1] = 0.0;
+    out.normalized[0] = myObject.returnThrust() * 0.952;
+    out.normalized[1] = myObject.returnThrust();
     out.normalized[2] = 0.0;
-    out.normalized[3] = 0.5;
+    out.normalized[3] = 0.0;
+    out.normalized[4] = 0.5;
+    out.normalized[5] = 0.5;
+    out.normalized[6] = 0.0;
+    out.normalized[7] = 0.0;
     }
     else{
-    out.normalized[0] = 0.0;
-    out.normalized[1] = 0.0;
+    out.normalized[0] = (myObject.returnThrust() + myObject.returnMotorOffset() )* 0.952;
+    out.normalized[1] = myObject.returnThrust() + myObject.returnMotorOffset();
     out.normalized[2] = 0.0;
-    out.normalized[3] = 0.5;
+    out.normalized[3] = 0.0;
+    out.normalized[4] = 0.5;
+    out.normalized[5] = 0.5;
+    out.normalized[6] = 0.0;
+    out.normalized[7] = 0.0;
     }
     control_pub.publish(out);
 
     ros::spinOnce();
-
+    ros::Rate loop_rate(myObject.returnFrequency());
     loop_rate.sleep();
     ++count;
   }
