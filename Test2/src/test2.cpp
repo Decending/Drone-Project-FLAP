@@ -122,8 +122,8 @@ int main(int argc, char **argv)
     out.normalized[1] = myObject.returnMotorSpeed();
     out.normalized[2] = 0.0;
     out.normalized[3] = 0.0;
-    out.normalized[4] = myObject.returnFlapAngle();
-    out.normalized[5] = myObject.returnFlapAngle();
+    out.normalized[4] = 1 - myObject.returnFlapAngle();
+    out.normalized[5] = 1 - myObject.returnFlapAngle();
     out.normalized[6] = 0.0;
     out.normalized[7] = 0.0;
     }
