@@ -5,40 +5,44 @@
 #include <std_msgs/Float64.h>
 #include <sensor_msgs/Joy.h>
 #include <sensor_msgs/Imu.h>
-#include <biquad.h>
+//#include <biquad.h>
 #include <biquad.cpp>
 #include <vector>
 #include <control/SetGains.h>
+#include <control/SetPositionReference.h>
+#include <control/SetLimits.h>
 #include <nav_msgs/Odometry.h>
 
 /**
  * This tutorial demonstrates simple sending of messages over the ROS system.
  */
 
-class SubscribeAndPublish
+class ControlObject
 {
 public:
-  SubscribeAndPublish()
+  ControlObject()
   {
-    rc_sub = n.subscribe("/rc", 1, &SubscribeAndPublish::SetThrust, this);
-    imu_sub = n.subscribe("/imu", 1, &SubscribeAndPublish::SetFlaps, this);
+    //Publisher and subscriber objects
+    rc_sub = n.subscribe("/rc", 1, &ControlObject::SetThrust, this);
+    imu_sub = n.subscribe("/imu", 1, &ControlObject::SetFlaps, this);
+    vicon_sub = n.subscribe("/vicon/flap/flap/odom", 1, &ControlObject::SetEulerAngles, this);
     imu_pub = n.advertise<sensor_msgs::Imu>("/filtered_imu", 1);
     rc_pub = n.advertise< mav_msgs::Actuators >( mav_msgs::default_topics::COMMAND_ACTUATORS, 1);
-    vicon_sub = n.subscribe("/vicon/flap/flap/odom", 1, &SubscribeAndPublish::SetEulerAngles, this);
+
+    //Lowpass filter setup
     SENSOR_ACCGYRO_HZ = 100;
     ACCGYRO_BIQUAD_CUT_HZ = 40;
     ACCGYRO_BUTTERWORTH_Q = 0.707;
     for(int i = 0; i < 3; i++){
 	    BiquadInitStateDF2T(&gyro_lpf_biquad[i].state);
-	    BiquadUpdateCoeffs(&gyro_lpf_biquad[i].coeffs, SENSOR_ACCGYRO_HZ, ACCGYRO_BIQUAD_CUT_HZ, ACCGYRO_BUTTERWORTH_Q, BIQUAD_TYPE_LPF);
+            BiquadUpdateCoeffs(&gyro_lpf_biquad[i].coeffs, SENSOR_ACCGYRO_HZ, ACCGYRO_BIQUAD_CUT_HZ, ACCGYRO_BUTTERWORTH_Q, BIQUAD_TYPE_LPF);
             BiquadInitStateDF2T(&velocity_lpf_biquad[i].state);
             BiquadUpdateCoeffs(&velocity_lpf_biquad[i].coeffs, SENSOR_ACCGYRO_HZ, ACCGYRO_BIQUAD_CUT_HZ, ACCGYRO_BUTTERWORTH_Q, BIQUAD_TYPE_LPF);
     }
-    //Data holders for actuators
+    //Data holders for actuators with their default values
     thrust = 0.0;
     flap1 = 0.5;
     flap2 = 0.5;
-    flapOffSet = 0.0;
 
     //Controller gains
     k1 = 0.2;
@@ -53,10 +57,10 @@ public:
     k10 = 1;
 
     //Holders for filter data
-    gyro_u = {0.0, 0.0, 0.0};
-    gyro_f = {0.0, 0.0, 0.0};
-    lin_speed_vicon = {0.0, 0.0};
-    lin_speed_vicon_f = {0.0, 0.0};
+    gyro_u = {0.0, 0.0, 0.0}; //Unfiltered
+    gyro_f = {0.0, 0.0, 0.0}; //Filtered
+    lin_speed_vicon = {0.0, 0.0}; //Unfiltered
+    lin_speed_vicon_f = {0.0, 0.0}; //Filtered
 
     //Initial data for vicon angles
     roll = 0.0;
@@ -72,10 +76,16 @@ public:
     ang_speed_ref_z = 0.0;
     lin_speed_ref_x = 0.0;
     lin_speed_ref_y = 0.0;
-    x_ref = 0.0;
-    y_ref = 4.0;
+    x_ref = 0.0; //Specific for the FROST lab at LTU
+    y_ref = 4.0; //Specific for the FROST lab at LTU
+
+    //Saturation limits
+    roll_ref_limit = 0.1;
+    pitch_ref_limit = 0.01;
+    thrust_roll_limit = 0.1;
   }
 
+  //Callback functions for subscribed ROS messages
   void SetThrust(sensor_msgs::Joy msg)
   {
     thrust = msg.axes[2];
@@ -119,23 +129,7 @@ public:
       yaw = atan2(siny_cosp, cosy_cosp);
   }
 
-  bool setGains(control::SetGains::Request& req, control::SetGains::Response& res){
-    k1 = req.k1;
-    k2 = req.k2;
-    k3 = req.k3;
-    k4 = req.k4;
-    k5 = req.k5;
-    k6 = req.k6;
-    k7 = req.k7;
-    k8 = req.k8;
-    k9 = req.k9;
-    k10 = req.k10;
-    x_ref = req.x_ref;
-    y_ref = req.y_ref;
-    flapOffSet = req.flapOffSet;
-    return true;
-  }
-
+  //Callback function for IMU data. Control calculations are made here
   void SetFlaps(sensor_msgs::Imu msg)
   {
     lin_speed_ref_x = k9*(x_ref - position_vicon_x);
@@ -144,21 +138,21 @@ public:
     roll_ref = k7*(lin_speed_ref_y - lin_speed_vicon_f.at(1));
     pitch_ref = k8*(lin_speed_ref_x - lin_speed_vicon_f.at(0));
 
-    if(roll_ref > 0.1){
-        roll_ref = 0.1;
+    if(roll_ref > roll_ref_limit){
+        roll_ref = roll_ref_limit;
     }
-    if(roll_ref < -0.1){
-        roll_ref = -0.1;
+    if(roll_ref < -roll_ref_limit){
+        roll_ref = -roll_ref_limit;
     }
-    if(pitch_ref > 0.01){
-        pitch_ref = 0.01;
+    if(pitch_ref > pitch_ref_limit){
+        pitch_ref = pitch_ref_limit;
     }
-    if(pitch_ref < -0.01){
-        pitch_ref = -0.01;
+    if(pitch_ref < -pitch_ref_limit){
+        pitch_ref = -pitch_ref_limit;
     }
 
     ang_speed_ref_x = k4*(-roll_ref - roll);
-    ang_speed_ref_y = k5*(-pitch_ref - pitch);
+    ang_speed_ref_y = k5*(pitch_ref - pitch);
     ang_speed_ref_z = k6*(yaw_ref - yaw);
 
     //defined so we can print it
@@ -174,14 +168,14 @@ public:
     out.angular_velocity.x = gyro_f.at(0);
     out.angular_velocity.y = gyro_f.at(1);
     out.angular_velocity.z = gyro_f.at(2);
-    flap1 = k1 * (-ang_speed_ref_z-gyro_f.at(1)) + k2 * (ang_speed_ref_y-gyro_f.at(0)) + 0.5 + flapOffSet;
-    flap2 = k1 * (-ang_speed_ref_z-gyro_f.at(1)) + k2 * (gyro_f.at(0)-ang_speed_ref_y) + 0.5 - flapOffSet;
+    flap1 = k1 * (-ang_speed_ref_z-gyro_f.at(1)) + k2 * (ang_speed_ref_y-gyro_f.at(0)) + 0.5;
+    flap2 = k1 * (-ang_speed_ref_z-gyro_f.at(1)) + k2 * (gyro_f.at(0)-ang_speed_ref_y) + 0.5;
     thrust_roll = k3 *(ang_speed_ref_x + gyro_f.at(2));
-    if(thrust_roll > 0.1){
-	 thrust_roll = 0.1;
+    if(thrust_roll > thrust_roll_limit){
+         thrust_roll = thrust_roll_limit;
     }
-    if(thrust_roll < -0.1){
-	 thrust_roll = -0.1;
+    if(thrust_roll < -thrust_roll_limit){
+         thrust_roll = -thrust_roll_limit;
     }
     //out.normalized[4] = ((-msg.axes[1]+msg.axes[0]) + 1) / 2; Flap1
     //out.normalized[5] = ((msg.axes[1]+msg.axes[0]) + 1) / 2; Flap2
@@ -223,8 +217,9 @@ public:
    }
    rc_pub.publish(command);
    return;
-  } 
+  }
 
+  //Get functions
   float returnThrust(){
       return thrust;
   }
@@ -240,7 +235,36 @@ public:
       return thrust_roll;
   }
 
+  //Response functions for services
+  bool setGains(control::SetGains::Request& req, control::SetGains::Response& res){
+    k1 = req.k1;
+    k2 = req.k2;
+    k3 = req.k3;
+    k4 = req.k4;
+    k5 = req.k5;
+    k6 = req.k6;
+    k7 = req.k7;
+    k8 = req.k8;
+    k9 = req.k9;
+    k10 = req.k10;
+    return true;
+  }
+
+  bool setPositionReference(control::SetPositionReference::Request& req, control::SetPositionReference::Response& res){
+    x_ref = req.x_ref;
+    y_ref = req.y_ref;
+    return true;
+  }
+
+  bool setLimits(control::SetLimits::Request& req, control::SetLimits::Response& res){
+    roll_ref_limit = req.roll_ref_limit;
+    pitch_ref_limit = req.pitch_ref_limit;
+    thrust_roll_limit = req.thrust_roll_limit;
+    return true;
+  }
+
 private:
+  //Ros handling
   ros::NodeHandle n;
   ros::Subscriber rc_sub;
   ros::Subscriber imu_sub;
@@ -248,6 +272,8 @@ private:
   ros::Publisher imu_pub;
   ros::Publisher rc_pub;
   ros::ServiceServer service;
+
+  //Control variables
   float thrust;
   float flap1;
   float flap2;
@@ -264,7 +290,6 @@ private:
   float k10;
   float x_ref;
   float y_ref;
-  float flapOffSet;
   float roll;
   float pitch;
   float yaw;
@@ -278,64 +303,35 @@ private:
   float lin_speed_ref_y;
   float position_vicon_x;
   float position_vicon_y;
+  float roll_ref_limit;
+  float pitch_ref_limit;
+  float thrust_roll_limit;
+
+  //Lowpass filter
   biquad_df2t_t gyro_lpf_biquad[3];
   biquad_df2t_t velocity_lpf_biquad[3];
   biquad_type_t BIQUAD_TYPE_LPF;
   float SENSOR_ACCGYRO_HZ;
   float ACCGYRO_BIQUAD_CUT_HZ;
   float ACCGYRO_BUTTERWORTH_Q;
+
+  //Data holders
   std::vector<float> gyro_u;
   std::vector<float> gyro_f;
   std::vector<float> lin_speed_vicon;
   std::vector<float> lin_speed_vicon_f;
   
 
-};//End of class SubscribeAndPublish
+};//End of class ControlObject
 
+//Main function to set up ROS node
 int main(int argc, char **argv)
 {
-  /**
-   * The ros::init() function needs to see argc and argv so that it can perform
-   * any ROS arguments and name remapping that were provided at the command line.
-   * For programmatic remappings you can use a different version of init() which takes
-   * remappings directly, but for most command-line programs, passing argc and argv is
-   * the easiest way to do it.  The third argument to init() is the name of the node.
-   *
-   * You must call one of the versions of ros::init() before using any other
-   * part of the ROS system.
-   */
   ros::init(argc, argv, "control");
   ros::NodeHandle n;
-  SubscribeAndPublish myObject;
-  ros::ServiceServer service = n.advertiseService("SetGains", &SubscribeAndPublish::setGains, &myObject);
-   /* The first NodeHandle constructed will fully initialize this node, and the last
-   * NodeHandle destructed will close down the node.
-   */
-
-  /**
-   * The advertise() function is how you tell ROS that you want to
-   * publish on a given topic name. This invokes a call to the ROS
-   * master node, which keeps a registry of who is publishing and who
-   * is subscribing. After this advertise() call is made, the master
-   * node will notify anyone who is trying to subscribe to this topic name,
-   * and they will in turn negotiate a peer-to-peer connection with this
-   * node.  advertise() returns a Publisher object which allows you to
-   * publish messages on that topic through a call to publish().  Once
-   * all copies of the returned Publisher object are destroyed, the topic
-   * will be automatically unadvertised.
-   *
-   * The second parameter to advertise() is the size of the message queue
-   * used for publishing messages.  If messages are published more quickly
-   * than we can send them, the number here specifies how many messages to
-   * buffer up before throwing some away.
-   */
-   ros::spin();
-
-  /**
-   * A count of how many messages we have sent. This is used to create
-   * a unique string for each message.
-   */
-
-
+  ControlObject myControlObject;
+  ros::ServiceServer service = n.advertiseService("SetGains", &ControlObject::setGains, &myControlObject);
+  service = n.advertiseService("SetPositionReference", &ControlObject::setPositionReference, &myControlObject);
+  ros::spin();
   return 0;
 }

@@ -59,6 +59,8 @@ find_package(catkin REQUIRED COMPONENTS
  add_service_files(
    FILES
    SetGains.srv
+   SetPositionReference.srv
+   SetLimits.srv
 #   Service2.srv
  )
 
