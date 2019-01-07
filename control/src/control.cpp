@@ -41,6 +41,7 @@ public:
     }
     //Data holders for actuators with their default values
     thrust = 0.0;
+    control_thrust = 0.0;
     flap1 = 0.5;
     flap2 = 0.5;
 
@@ -55,6 +56,7 @@ public:
     k8 = 0.3;
     k9 = 1;
     k10 = 1;
+    k11 = 0.3;
 
     //Holders for filter data
     gyro_u = {0.0, 0.0, 0.0}; //Unfiltered
@@ -78,11 +80,13 @@ public:
     lin_speed_ref_y = 0.0;
     x_ref = 0.0; //Specific for the FROST lab at LTU
     y_ref = 4.0; //Specific for the FROST lab at LTU
+    z_ref = 1.0; //Height reference
 
     //Saturation limits
     roll_ref_limit = 0.1;
-    pitch_ref_limit = 0.01;
+    pitch_ref_limit = 0.1;
     thrust_roll_limit = 0.1;
+    control_thrust_limit = 0.1;
   }
 
   //Callback functions for subscribed ROS messages
@@ -105,6 +109,7 @@ public:
 
       position_vicon_x = msg.pose.pose.position.x;
       position_vicon_y = msg.pose.pose.position.y;
+      position_vicon_z = msg.pose.pose.position.z;
 
       double qx = msg.pose.pose.orientation.x;
       double qy = msg.pose.pose.orientation.y;
@@ -177,14 +182,22 @@ public:
     if(thrust_roll < -thrust_roll_limit){
          thrust_roll = -thrust_roll_limit;
     }
+
+    control_thrust = k11*(z_ref - position_vicon_z);
+    if(control_thrust > control_thrust_limit){
+        control_thrust = control_thrust_limit;
+    }
+    if(control_thrust < -control_thrust_limit){
+        control_thrust = -control_thrust_limit;
+    }
     //out.normalized[4] = ((-msg.axes[1]+msg.axes[0]) + 1) / 2; Flap1
     //out.normalized[5] = ((msg.axes[1]+msg.axes[0]) + 1) / 2; Flap2
     imu_pub.publish(out);
 
    mav_msgs::Actuators command;
    command.normalized.resize(8);
-   command.normalized[0] = returnThrust() - returnThrust_roll();
-   command.normalized[1] = returnThrust() + returnThrust_roll();
+   command.normalized[0] = 0.86 + control_thrust - returnThrust_roll();
+   command.normalized[1] = 0.86 + control_thrust + returnThrust_roll();
    command.normalized[2] = 0.0;
    command.normalized[3] = 0.0;
    command.normalized[4] = returnFlap1();
@@ -247,12 +260,14 @@ public:
     k8 = req.k8;
     k9 = req.k9;
     k10 = req.k10;
+    k11 = req.k11;
     return true;
   }
 
   bool setPositionReference(control::SetPositionReference::Request& req, control::SetPositionReference::Response& res){
     x_ref = req.x_ref;
     y_ref = req.y_ref;
+    z_ref = req.z_ref;
     return true;
   }
 
@@ -260,6 +275,7 @@ public:
     roll_ref_limit = req.roll_ref_limit;
     pitch_ref_limit = req.pitch_ref_limit;
     thrust_roll_limit = req.thrust_roll_limit;
+    control_thrust_limit = req.control_thrust_limit;
     return true;
   }
 
@@ -275,6 +291,7 @@ private:
 
   //Control variables
   float thrust;
+  float control_thrust;
   float flap1;
   float flap2;
   float thrust_roll;
@@ -288,8 +305,10 @@ private:
   float k8;
   float k9;
   float k10;
+  float k11;
   float x_ref;
   float y_ref;
+  float z_ref;
   float roll;
   float pitch;
   float yaw;
@@ -303,9 +322,11 @@ private:
   float lin_speed_ref_y;
   float position_vicon_x;
   float position_vicon_y;
+  float position_vicon_z;
   float roll_ref_limit;
   float pitch_ref_limit;
   float thrust_roll_limit;
+  float control_thrust_limit;
 
   //Lowpass filter
   biquad_df2t_t gyro_lpf_biquad[3];

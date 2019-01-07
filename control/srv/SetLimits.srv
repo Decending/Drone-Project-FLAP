@@ -1,5 +1,6 @@
 float64 roll_ref_limit
 float64 pitch_ref_limit
 float64 thrust_roll_limit
+float64 control_thrust_limit
 ---
 
