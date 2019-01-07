@@ -52,11 +52,12 @@ public:
     k4 = 10;
     k5 = 10;
     k6 = 10;
-    k7 = 0.3;
-    k8 = 0.3;
+    k7 = 0.07;
+    k8 = 0.07;
     k9 = 1;
     k10 = 1;
-    k11 = 0.3;
+    k11 = 1;
+    k12 = 1;
 
     //Holders for filter data
     gyro_u = {0.0, 0.0, 0.0}; //Unfiltered
@@ -78,6 +79,8 @@ public:
     ang_speed_ref_z = 0.0;
     lin_speed_ref_x = 0.0;
     lin_speed_ref_y = 0.0;
+    lin_speed_ref_z = 0.0;
+    lin_speed_vicon_z = 0.0;
     x_ref = 0.0; //Specific for the FROST lab at LTU
     y_ref = 4.0; //Specific for the FROST lab at LTU
     z_ref = 1.0; //Height reference
@@ -110,6 +113,7 @@ public:
       position_vicon_x = msg.pose.pose.position.x;
       position_vicon_y = msg.pose.pose.position.y;
       position_vicon_z = msg.pose.pose.position.z;
+      lin_speed_vicon_z = msg.twist.twist.linear.z;
 
       double qx = msg.pose.pose.orientation.x;
       double qy = msg.pose.pose.orientation.y;
@@ -183,7 +187,8 @@ public:
          thrust_roll = -thrust_roll_limit;
     }
 
-    control_thrust = k11*(z_ref - position_vicon_z);
+    lin_speed_ref_z = k11*(z_ref - position_vicon_z);
+    control_thrust = k12*(lin_speed_ref_z - lin_speed_vicon_z);
     if(control_thrust > control_thrust_limit){
         control_thrust = control_thrust_limit;
     }
@@ -196,8 +201,8 @@ public:
 
    mav_msgs::Actuators command;
    command.normalized.resize(8);
-   command.normalized[0] = 0.86 + control_thrust - returnThrust_roll();
-   command.normalized[1] = 0.86 + control_thrust + returnThrust_roll();
+   command.normalized[0] = 0.8 + control_thrust - returnThrust_roll();
+   command.normalized[1] = 0.8 + control_thrust + returnThrust_roll();
    command.normalized[2] = 0.0;
    command.normalized[3] = 0.0;
    command.normalized[4] = returnFlap1();
@@ -261,6 +266,7 @@ public:
     k9 = req.k9;
     k10 = req.k10;
     k11 = req.k11;
+    k12 = req.k12;
     return true;
   }
 
@@ -306,6 +312,7 @@ private:
   float k9;
   float k10;
   float k11;
+  float k12;
   float x_ref;
   float y_ref;
   float z_ref;
@@ -320,6 +327,8 @@ private:
   float ang_speed_ref_z;
   float lin_speed_ref_x;
   float lin_speed_ref_y;
+  float lin_speed_ref_z;
+  float lin_speed_vicon_z;
   float position_vicon_x;
   float position_vicon_y;
   float position_vicon_z;
