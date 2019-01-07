@@ -330,8 +330,9 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "control");
   ros::NodeHandle n;
   ControlObject myControlObject;
-  ros::ServiceServer service = n.advertiseService("SetGains", &ControlObject::setGains, &myControlObject);
-  service = n.advertiseService("SetPositionReference", &ControlObject::setPositionReference, &myControlObject);
+  ros::ServiceServer gainService = n.advertiseService("SetGains", &ControlObject::setGains, &myControlObject);
+  ros::ServiceServer positionService = n.advertiseService("SetPositionReference", &ControlObject::setPositionReference, &myControlObject);
+  ros::ServiceServer limitService = n.advertiseService("SetLimits", &ControlObject::setLimits, &myControlObject);
   ros::spin();
   return 0;
 }
