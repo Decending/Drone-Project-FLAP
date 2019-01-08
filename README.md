@@ -30,4 +30,4 @@ Kalle Löfgren - kallfg-3@student.ltu.se
 
 CREDIT
 -----------
-Credit goes to Emil Fresk and Elias Small for the existing code which were modified and used in this project, specifially the kfly communication as well as the vicon communication used at the FROST lab at Luleå University of Technology.
+Credit goes to Emil Fresk and Elias Small for the guidance provided during the project and the existing code which were modified and used by the group in this project, specifially the kfly communication and kfly GUI as well as the vicon communication used at the FROST lab at Luleå University of Technology.
