@@ -1,5 +1,4 @@
 # Drone-Project-FLAP
-The code repository for the drone project FLAP done at Luleå University of Technology for educational purposes.
 
 INTRODUCTION
 ------------
