@@ -1,4 +1,5 @@
 # Drone-Project-FLAP
+A drone project done at Luleås University of Technology for educational purposes, with the goal of making a tailsitter drone hover with a position regulator and a LQR controller. Due to time constraints a p-cascade controller was used instead.
 
 INTRODUCTION
 ------------
