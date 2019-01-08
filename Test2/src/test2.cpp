@@ -5,7 +5,9 @@
 #include <std_msgs/Float64.h>
 #include <test2/SetVariables.h>
 
-//The test file for testing yaw, done by keeping a constant input for the engines while alternating the flap input between the two flaps
+/* The test file for testing yaw, done by keeping a constant input for the engines 
+ * while alternating the flap input between the two flaps
+*/
 
 class SubscribeAndPublish
 {
@@ -30,11 +32,9 @@ public:
   float returnFrequency(){
       return myFrequency;
   }
-
   double returnMotorSpeed(){
       return myMotorSpeed;
   }
-
   double returnFlapAngle(){
       return myFlapAngle;
   }
@@ -43,32 +43,33 @@ private:
   float myFrequency;
   double myMotorSpeed;
   double myFlapAngle;
-
-
 };
 
 //The main function to set up the test node
 int main(int argc, char **argv)
 {
-
+  
   ros::init(argc, argv, "control");
-
   ros::NodeHandle n;
-
   SubscribeAndPublish myObject;
   ros::ServiceServer service = n.advertiseService("SetVariables", &SubscribeAndPublish::setVariables, &myObject);
   ros::Publisher control_pub = n.advertise< mav_msgs::Actuators >( mav_msgs::default_topics::COMMAND_ACTUATORS, 1);
-
   ros::Rate loop_rate(10);
-
   int count = 0;
   
   //Main loop
   while (ros::ok())
   {
-
+    
+    /* Creating and filling the command with data
+     *  - Index 0 and 1 are for the engines on the drone
+     *  - Index 4 and 5 are for the flaps on the drone
+     * The flaps are mirrored on the drone and they take inputs from 0 to 1
+     * hence input 0.2 to one flap corresponds to input 0.8 to the other
+     * The engines have different RPM with the same input and is corrected by multiplication
+    */
+    
     mav_msgs::Actuators out;
-
     out.normalized.resize(8);
     if(count % 2 == 0){
     out.normalized[0] = myObject.returnMotorSpeed() * 0.952;
@@ -97,7 +98,6 @@ int main(int argc, char **argv)
     loop_rate.sleep();
     ++count;
   }
-
-
+  
   return 0;
 }
