@@ -5,7 +5,6 @@
 #include <std_msgs/Float64.h>
 #include <sensor_msgs/Joy.h>
 #include <sensor_msgs/Imu.h>
-//#include <biquad.h>
 #include <biquad.cpp>
 #include <vector>
 #include <control/SetGains.h>
@@ -195,8 +194,6 @@ public:
     if(control_thrust < -control_thrust_limit){
         control_thrust = -control_thrust_limit;
     }
-    //out.normalized[4] = ((-msg.axes[1]+msg.axes[0]) + 1) / 2; Flap1
-    //out.normalized[5] = ((msg.axes[1]+msg.axes[0]) + 1) / 2; Flap2
     imu_pub.publish(out);
 
    mav_msgs::Actuators command;
