@@ -12,10 +12,6 @@
 #include <control/SetLimits.h>
 #include <nav_msgs/Odometry.h>
 
-/**
- * This tutorial demonstrates simple sending of messages over the ROS system.
- */
-
 class ControlObject
 {
 public:
